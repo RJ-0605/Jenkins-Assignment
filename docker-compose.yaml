@@ -1,0 +1,44 @@
+version: "3"
+services:
+    jenkins:
+      container_name: jenkins
+      image: 644435390668.dkr.ecr.us-west-2.amazonaws.com/rodney-ecr-docker-in-jenkins:latest
+      ports:
+      - "8080:8080"
+      networks:
+      - jenkins-gitlab.net
+      volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      restart: on-failure
+      depends_on:
+        gitlab:
+          condition: service_healthy
+
+    gitlab:
+      container_name: gitlab
+      restart: always
+      image: gitlab/gitlab-ce
+      hostname: gitlab
+      environment:
+        GITLAB_OMNIBUS_CONFIG: |
+          external_url 'http://ec2-54-176-34-223.us-west-1.compute.amazonaws.com'
+            gitlab_rails['initial_root_password'] = '123@admin'
+      ports:
+      - "8088:80"
+      - "8022:22"
+      networks:
+        - jenkins-gitlab.net
+      volumes:
+      - gitlab_data:/etc/gitlab
+      - gitlab-log:/var/log/gitlab
+      - gitlab-config:/var/opt/gitlab
+      shm_size: '256m'
+
+networks:
+  jenkins-gitlab.net:
+volumes:
+  jenkins_home:
+  gitlab_data:
+  gitlab-log:
+  gitlab-config:
